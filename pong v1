@@ -1,0 +1,180 @@
+import pygame, sys
+import os
+pygame.font.init()
+
+object = []
+
+WHITE = (255,255,255)
+BLACK = (0,0,0)
+
+FONT = pygame.font.SysFont('comicsans',100)
+sec = 10
+BVEL = 5
+VEL = 10
+FPS = 60
+WIDTH =  900
+HEIGHT = 500
+P_WIDTH,P_HEIGHT = 10,100
+RADIUS = 10
+ballYSpeed = 5
+ballXSpeed = 5
+ballPos = pygame.Rect(450+RADIUS/2,250,RADIUS,RADIUS) 
+P1 = pygame.Rect(50,250,P_WIDTH,P_HEIGHT)
+P2 = pygame.Rect(850-P_WIDTH,250,P_WIDTH,P_HEIGHT)
+P1_score = pygame.USEREVENT + 1
+P2_score = pygame.USEREVENT + 2
+WINDOW = pygame.display.set_mode((WIDTH,HEIGHT))
+pygame.display.set_caption("game")
+Game_box = pygame.Rect(0,200,400,100)
+Mode1_box = pygame.Rect(0,300,300,100)
+Mode2_box = pygame.Rect(0,400,500,100)
+
+def draw_menu(): #draws the main menu. 
+  while(True):
+    WINDOW.fill((5,5,30))
+    
+    Pong = FONT.render("P O N G",True,(255,255,255))
+    Game = FONT.render("Normal 1v1",True,(255,255,255))
+    Mode1 = FONT.render("1 v cpu",True,(255,255,255))
+    Mode2 = FONT.render("obstical mode",True,(255,255,255))
+    WINDOW.blit(Pong,(0,0))
+    WINDOW.blit(Game,(0,200))
+    WINDOW.blit(Mode1,(0,300))
+    WINDOW.blit(Mode2,(0,400))
+    for event in pygame.event.get():
+      if(event.type == pygame.MOUSEBUTTONUP):
+        mpos = pygame.mouse.get_pos()
+        if ( Game_box.collidepoint( mpos ) ): 
+          return 0
+        if(Mode1_box.collidepoint( mpos )):
+          return 1
+        if(Mode2_box.collidepoint( mpos )):
+          return 2
+    pygame.display.update()
+
+def draw_window(clock,P1_point,P2_point): #draws everything in the "game" part.
+  timer = FONT.render(str(clock), True,(255,255,0) )
+  P1_point = FONT.render(str(P1_point), True, (WHITE))
+  P2_point = FONT.render(str(P2_point), True, (WHITE))
+  WINDOW.fill((5, 5, 30))
+  pygame.draw.rect(WINDOW, WHITE, P1)
+  pygame.draw.rect(WINDOW, WHITE,P2)
+  pygame.draw.circle(WINDOW,WHITE,(ballPos.x,ballPos.y),10)
+  for i in range(0,HEIGHT,HEIGHT//20):
+      pygame.draw.rect(WINDOW,(WHITE),(450+5/2,i,5,15))
+  if clock >= 0:
+    WINDOW.blit(timer,(435,50))
+  else:
+    WINDOW.blit(P1_point,(375,0))
+    WINDOW.blit(P2_point,(500,0))
+  
+  pygame.display.update()
+
+#def draw_instruction():
+  
+
+def touching(item,object):
+  print(object.w)
+  if item.x < object.x + 2*object.w and item.x > object.x and item.y >= object.y and object.y <= item.y + item.h:
+    return (object)
+    
+def ball_handle_movement(sec): #controls the movement of the ball
+  global ballYSpeed,ballPos, ballXSpeed, BVEL
+  if sec <= 0:
+    if touching(ballPos,P1): #the ball moves the other direction horizontally if it touches the left platform. 
+      BVEL += 0.1
+      #ballYSpeed = 0
+      ballXSpeed = BVEL
+    if ballPos.colliderect(P2): #the ball moves the other direction horizontally if it touches the right platform
+      BVEL += 0.1
+      ballXSpeed = -BVEL
+    if ballPos.y <= 10: #if it touchs the top boundary then the ball moves the other direction vertically
+      ballYSpeed = BVEL 
+    if ballPos.y >= 490: #if it touchs the bottom boundary then the ball moves the other direction vertically
+      ballYSpeed = -BVEL
+    ballPos.x += ballXSpeed
+    ballPos.y += ballYSpeed
+  
+    
+def P1_handle_movement(keys_pressed,P1): #handle the movement of the left platform. 
+  if keys_pressed[pygame.K_d] and P1.y >= 0:  
+    P1.y -= VEL
+  if keys_pressed[pygame.K_a] and P1.y + P_HEIGHT+10 <= HEIGHT:
+    P1.y += VEL
+    
+def P2_handle_movement(keys_pressed,P2,Mode): #handle the movement of the cpu in the "1 v cpu" game mode, it handles the rightplatforms movement overall. 
+  global ballPos
+  if(Mode == 1):
+    if(ballPos.x >= 450):
+      if(ballPos.y >= P2.y + P_HEIGHT/2+20 and P2.y+P_HEIGHT+10 <= HEIGHT):
+        P2.y+=VEL
+      elif(ballPos.y <= P2.y + P_HEIGHT/2 -20 and P2.y >= 10):
+        P2.y-=VEL
+  else:
+    
+   if keys_pressed[pygame.K_LEFT]  and P2.y + P_HEIGHT+10 <= HEIGHT: 
+     P2.y += VEL
+   if keys_pressed[pygame.K_RIGHT]  and P2.y >= 10: 
+     P2.y -= VEL
+
+#def handle_ball(): #controls  
+
+def check_winner(): #checks if the ball has gotten out of bound on the 
+  global ballPos
+  
+  if ballPos.x <= -20:
+     pygame.event.post(pygame.event.Event(P2_score))
+     return True 
+  if ballPos.x >= 900:
+     pygame.event.post(pygame.event.Event(P1_score))
+     return True
+    
+def main(): 
+  global BVEL, ballXSpeed, ballYSpeed
+  P1_point=0
+  P2_point=0
+  t1 = 0
+  Mode = draw_menu()
+  clock = pygame.time.Clock()
+  run = True
+  start_ticks=pygame.time.get_ticks() 
+  
+  while run:
+    
+    seconds=(pygame.time.get_ticks()-start_ticks)/1000
+    
+    clock.tick(FPS)
+    clocks = 3 -(int(seconds)-int(t1))
+      
+    
+    for event in pygame.event.get():
+      if event.type == pygame.QUIT:
+        run = False
+      if event.type == P1_score:
+        P1_point += 1
+      if event.type == P2_score:
+        P2_point += 1 
+        
+      #if event.type == pygame.KEYDOWN:
+        
+      
+    resetGame = check_winner()
+    if (resetGame):
+      t1 = seconds
+      BVEL = 5
+      ballPos.x = 450
+      ballPos.y = 250
+      ballYSpeed = 5
+      ballXSpeed = 5
+      
+    keys_pressed = pygame.key.get_pressed()
+    ball_handle_movement(clocks)
+    P2_handle_movement(keys_pressed,P2,Mode)
+    P1_handle_movement(keys_pressed,P1)
+    draw_window(clocks,P1_point,P2_point)
+    
+      
+  pygame.quit()
+
+if __name__ == "__main__":
+  main()
